@@ -138,26 +138,69 @@ namespace Locadora.Controller
 
             connection.Open();
 
-            try
+            using (SqlTransaction transaction = connection.BeginTransaction())
             {
-                SqlCommand command = new SqlCommand(Cliente.UPDATEFONECLIENTE, connection);
+                try
+                {
+                    SqlCommand command = new SqlCommand(Cliente.UPDATEFONECLIENTE, connection, transaction);
 
-                command.Parameters.AddWithValue("@Telefone", clienteEnconntrado.Telefone);
-                command.Parameters.AddWithValue("@IdCliente", clienteEnconntrado.ClienteID);
-                command.ExecuteNonQuery();
-            }
-            catch (SqlException ex)
-            {
-                throw new Exception("Erro ao atualizar telefone do cliente: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao atualizar telefone do cliente: " + ex.Message);
-            }
-            finally
-            {
-                connection.Close();
+                    command.Parameters.AddWithValue("@Telefone", clienteEnconntrado.Telefone);
+                    command.Parameters.AddWithValue("@IdCliente", clienteEnconntrado.ClienteID);
+                    command.ExecuteNonQuery();
+                    transaction.Commit();
+                }
+                catch (SqlException ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("Erro ao atualizar telefone do cliente: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("Erro ao atualizar telefone do cliente: " + ex.Message);
+                }
+                finally
+                {
+                    connection.Close();
 
+                }
+            }
+        }
+
+        public void DeletarCliente(string email)
+        {
+            var clienteEncontrado = this.BuscaClientePorEmail(email);
+
+            if (clienteEncontrado is null)
+                throw new Exception("Cliente não encontrado.");
+
+            SqlConnection connection = new SqlConnection(ConnectionDB.GetConnectionString());
+
+            connection.Open();
+
+            using (SqlTransaction transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    SqlCommand command = new SqlCommand(Cliente.DELETECLIENTE, connection, transaction);
+                    command.Parameters.AddWithValue("@IdCliente", clienteEncontrado.ClienteID);
+                    command.ExecuteNonQuery();
+                    transaction.Commit();
+                }
+                catch (SqlException ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("Erro ao deletar cliente: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("Erro ao deletar cliente: " + ex.Message);
+                }
+                finally
+                {
+                    connection.Close();
+                }
             }
         }
     }
